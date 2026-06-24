@@ -3,6 +3,7 @@ import sharp from "sharp";
 import request from "supertest";
 import { beforeEach, describe, expect, it } from "vitest";
 import { createApp } from "../src/app";
+import { env } from "../src/config/env";
 import { store } from "../src/store";
 
 async function sampleImage() {
@@ -69,6 +70,37 @@ describe("bead routes", () => {
 
     expect(upload.status).toBe(402);
     expect(upload.body.code).toBe("NO_REGULAR_COUNT");
+  });
+
+  it("refunds AI count when AI provider is not configured", async () => {
+    const previousProvider = env.ai.provider;
+    const previousKey = env.ai.volcengineApiKey;
+    env.ai.provider = "";
+    env.ai.volcengineApiKey = "";
+
+    const agent = request.agent(createApp());
+    const login = await agent.post("/api/auth/dev-login");
+    store.updateUserCounts(login.body.id, { regularCount: 0, memberCount: 1 });
+
+    const upload = await agent
+      .post("/api/app/bead/upload")
+      .field("gridSize", "8")
+      .field("colorLimit", "auto")
+      .field("brand", "MARD")
+      .field("isAI", "true")
+      .field("aiStyle", "remove-background-cartoonize")
+      .field("isReversal", "false")
+      .field("tolerance", "0")
+      .field("imageStyle", "卡通")
+      .attach("file", await sampleImage(), "sample.png");
+
+    const customer = await agent.get("/api/app/customer/getInfo");
+
+    expect(upload.status).toBe(500);
+    expect(customer.body.memberCount).toBe(1);
+
+    env.ai.provider = previousProvider;
+    env.ai.volcengineApiKey = previousKey;
   });
 
   it("returns a clear error when the uploaded file is larger than the limit", async () => {

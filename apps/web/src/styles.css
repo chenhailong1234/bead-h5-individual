@@ -432,3 +432,35 @@ hr {
 
 
 
+
+.ai-style-panel,
+.option-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.ai-style-panel button,
+.option-row button {
+  flex: 0 0 auto;
+  min-width: 74px;
+  min-height: 38px;
+  padding: 8px 10px;
+  border-radius: 12px;
+  color: #6d638a;
+  background: #f2efff;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.ai-style-panel button.active,
+.option-row button.active {
+  color: #fff;
+  background: #7668f6;
+}
+
+.setting-block {
+  margin-top: 12px;
+  font-weight: 700;
+}

@@ -7,7 +7,7 @@ export type PaletteColor = {
   hex: string;
 };
 
-type Rgb = {
+export type Rgb = {
   r: number;
   g: number;
   b: number;
@@ -22,7 +22,7 @@ export type ColorUsage = {
 export type GenerateOptions = {
   outputDir: string;
   gridSize: number;
-  colorLimit: number;
+  colorLimit: number | "auto";
   isReversal: boolean;
   tolerance: number;
   palette: PaletteColor[];
@@ -35,6 +35,7 @@ export type GeneratedImages = {
   width: number;
   height: number;
   totalBeads: number;
+  selectedColorCount: number;
   usage: ColorUsage[];
 };
 
@@ -115,6 +116,41 @@ export function nearestPaletteColor(hex: string, palette: PaletteColor[]): Palet
 
 export function limitPalette(palette: PaletteColor[], colorLimit: number): PaletteColor[] {
   return palette.slice(0, Math.max(1, Math.min(colorLimit, palette.length)));
+}
+
+function normalizeColorLimit(colorLimit: number | "auto", availableColors: number, candidateCount: number) {
+  if (colorLimit === "auto") {
+    const autoCount = candidateCount > 60 ? 64 : candidateCount > 36 ? 42 : 24;
+    return Math.max(1, Math.min(autoCount, availableColors, 96));
+  }
+
+  return Math.max(1, Math.min(colorLimit, availableColors));
+}
+
+export function selectPaletteForImageColors(
+  samples: Rgb[],
+  palette: PaletteColor[],
+  colorLimit: number | "auto"
+): PaletteColor[] {
+  if (palette.length === 0) {
+    return [];
+  }
+
+  const usage = new Map<string, { color: PaletteColor; count: number }>();
+  for (const sample of samples) {
+    const nearest = nearestPaletteColor(rgbToHex(sample), palette);
+    const key = nearest.name;
+    const existing = usage.get(key);
+    if (existing) {
+      existing.count += 1;
+    } else {
+      usage.set(key, { color: nearest, count: 1 });
+    }
+  }
+
+  const sorted = [...usage.values()].sort((a, b) => b.count - a.count || a.color.name.localeCompare(b.color.name));
+  const resolvedLimit = normalizeColorLimit(colorLimit, palette.length, sorted.length);
+  return sorted.slice(0, resolvedLimit).map((item) => item.color);
 }
 
 export function summarizeUsage(colors: PaletteColor[]): ColorUsage[] {
@@ -220,7 +256,6 @@ export async function generateBeadImages(inputPath: string, options: GenerateOpt
   const originalPath = join(options.outputDir, "original.png");
   const resultPath = join(options.outputDir, "result.png");
   const previewPath = join(options.outputDir, "preview.png");
-  const palette = limitPalette(options.palette, options.colorLimit);
   const metadata = await sharp(inputPath).rotate().metadata();
   const dimensions = calculateGridDimensions(metadata.width ?? options.gridSize, metadata.height ?? options.gridSize, options.gridSize);
 
@@ -237,12 +272,14 @@ export async function generateBeadImages(inputPath: string, options: GenerateOpt
     .ensureAlpha()
     .toBuffer();
 
-  const colors: PaletteColor[] = [];
+  const samples: Rgb[] = [];
   for (let index = 0; index < raw.length; index += 4) {
     const rgb = applyTolerance(maybeReverse({ r: raw[index], g: raw[index + 1], b: raw[index + 2] }, options.isReversal), options.tolerance);
-    colors.push(nearestPaletteColor(rgbToHex(rgb), palette));
+    samples.push(rgb);
   }
 
+  const palette = selectPaletteForImageColors(samples, options.palette, options.colorLimit);
+  const colors = samples.map((rgb) => nearestPaletteColor(rgbToHex(rgb), palette));
   const usage = summarizeUsage(colors);
   await sharp(Buffer.from(renderResultSvg(colors, dimensions.width, dimensions.height, 24))).png().toFile(resultPath);
   await sharp(Buffer.from(renderChartSvg(colors, dimensions.width, dimensions.height, 24, usage))).png().toFile(previewPath);
@@ -254,8 +291,11 @@ export async function generateBeadImages(inputPath: string, options: GenerateOpt
     width: dimensions.width,
     height: dimensions.height,
     totalBeads: dimensions.width * dimensions.height,
+    selectedColorCount: palette.length,
     usage
   };
 }
+
+
 
 

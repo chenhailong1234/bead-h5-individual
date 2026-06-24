@@ -5,6 +5,7 @@ import { defaultConfig, store, type BeadTaskRecord } from "../store";
 import { requireUser } from "../middleware/session";
 import { deductForTask, refundForTask } from "../services/counts";
 import { generateBeadImages } from "../services/beadGenerator";
+import { getAiImageProvider } from "../services/aiImage";
 import { publicUrl, saveUpload, taskOutputDir } from "../services/storage";
 
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: defaultConfig.uploadData.maxLength } });
@@ -13,6 +14,19 @@ export const beadRouter = Router();
 
 function parseBool(value: unknown) {
   return value === true || value === "true";
+}
+
+function parseColorLimit(value: unknown): number | "auto" {
+  if (value === "auto") return "auto";
+  const parsed = Number(value ?? 16);
+  return Number.isFinite(parsed) ? parsed : 16;
+}
+
+function parseAiStyle(value: unknown): "remove-background" | "cartoonize" | "remove-background-cartoonize" {
+  if (value === "remove-background" || value === "cartoonize" || value === "remove-background-cartoonize") {
+    return value;
+  }
+  return "remove-background-cartoonize";
 }
 
 beadRouter.post("/upload", requireUser, upload.single("file"), async (req, res) => {
@@ -40,12 +54,13 @@ beadRouter.post("/upload", requireUser, upload.single("file"), async (req, res) 
     userId: user.id,
     status: "running",
     gridSize: Number(req.body.gridSize ?? 64),
-    colorLimit: Number(req.body.colorLimit ?? 16),
+    colorLimit: parseColorLimit(req.body.colorLimit),
     brand: String(req.body.brand ?? "MARD"),
     isReversal: parseBool(req.body.isReversal),
     isAI,
     tolerance: Number(req.body.tolerance ?? 0),
-    imageStyle: String(req.body.imageStyle ?? "Cartoon"),
+    imageStyle: String(req.body.imageStyle ?? "卡通"),
+    aiStyle: parseAiStyle(req.body.aiStyle),
     deductedCountType: deduction.type,
     deductedCount: deduction.count,
     createdAt: new Date()
@@ -55,8 +70,14 @@ beadRouter.post("/upload", requireUser, upload.single("file"), async (req, res) 
   try {
     const uploadPath = await saveUpload(req.file);
     const outDir = await taskOutputDir(task.id);
+    let generationInputPath = uploadPath;
+    if (task.isAI) {
+      const optimized = await getAiImageProvider().optimizeImage(uploadPath, task.aiStyle ?? "remove-background-cartoonize", outDir);
+      generationInputPath = optimized.outputPath;
+      task.optimizedPath = optimized.outputPath;
+    }
     const brand = defaultConfig.brandList.find((item) => item.name === task.brand) ?? defaultConfig.brandList[0];
-    const generated = await generateBeadImages(uploadPath, {
+    const generated = await generateBeadImages(generationInputPath, {
       outputDir: outDir,
       gridSize: task.gridSize,
       colorLimit: task.colorLimit,
@@ -72,6 +93,7 @@ beadRouter.post("/upload", requireUser, upload.single("file"), async (req, res) 
       width: generated.width,
       height: generated.height,
       totalBeads: generated.totalBeads,
+      selectedColorCount: generated.selectedColorCount,
       usage: generated.usage,
       completedAt: new Date()
     });
@@ -100,6 +122,7 @@ beadRouter.get("/getBeadTask", requireUser, (req, res) => {
     original: task.originalPath ? publicUrl(task.originalPath) : "",
     result: task.resultPath ? publicUrl(task.resultPath) : "",
     preview: task.previewPath ? publicUrl(task.previewPath) : "",
+    optimized: task.optimizedPath ? publicUrl(task.optimizedPath) : "",
     absoluteResultPath: task.resultPath
   });
 });
@@ -122,7 +145,9 @@ beadRouter.get("/queryBeadLogList", requireUser, (req, res) => {
       imageStyle: task.imageStyle,
       width: task.width,
       height: task.height,
-      totalBeads: task.totalBeads
+      totalBeads: task.totalBeads,
+      selectedColorCount: task.selectedColorCount,
+      aiStyle: task.aiStyle
     }));
   res.json(tasks);
 });

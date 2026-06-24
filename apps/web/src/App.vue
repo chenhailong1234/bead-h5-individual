@@ -24,10 +24,11 @@ const previewUrl = ref("");
 const selectedBrand = ref("MARD");
 const isAI = ref(false);
 const isReversal = ref(false);
-const imageStyle = ref("Cartoon");
+const imageStyle = ref("卡通");
+const aiStyle = ref<"remove-background" | "cartoonize" | "remove-background-cartoonize">("remove-background-cartoonize");
 const tolerance = ref(0);
 const gridSize = ref(64);
-const colorLimit = ref(16);
+const colorLimit = ref<number | "auto">(16);
 const currentTask = ref<BeadTask | null>(null);
 const activeTab = ref<"original" | "result" | "preview">("preview");
 const loading = ref(false);
@@ -36,14 +37,21 @@ const showRecharge = ref(false);
 const showHistory = ref(false);
 const toast = ref("");
 const maxUploadBytes = 10 * 1024 * 1024;
+const aiStyles = [
+  { label: "去背景", value: "remove-background" },
+  { label: "卡通化", value: "cartoonize" },
+  { label: "去背景+卡通", value: "remove-background-cartoonize" }
+] as const;
 
 const currentImage = computed(() => currentTask.value?.[activeTab.value] ?? "");
 const normalPackages = computed(() => packages.value.filter((item) => item.type === "normal"));
 const aiPackages = computed(() => packages.value.filter((item) => item.type === "ai"));
 const taskSummary = computed(() => {
   if (!currentTask.value?.width || !currentTask.value?.height) return "";
-  return `${currentTask.value.width} x ${currentTask.value.height} | 共 ${currentTask.value.totalBeads ?? 0} 颗豆子`;
+  const colorText = currentTask.value.selectedColorCount ? ` | ${currentTask.value.selectedColorCount} 色` : "";
+  return `${currentTask.value.width} x ${currentTask.value.height}${colorText} | 共 ${currentTask.value.totalBeads ?? 0} 颗豆子`;
 });
+const generateButtonText = computed(() => loading.value ? loadingText.value : isAI.value ? "AI 优化并生成" : "一键生成图纸");
 
 function countText(value: number) {
   return value === -1 ? "无限" : String(value);
@@ -153,6 +161,7 @@ async function generate() {
     form.append("colorLimit", String(colorLimit.value));
     form.append("brand", selectedBrand.value);
     form.append("isAI", String(isAI.value));
+    form.append("aiStyle", aiStyle.value);
     form.append("isReversal", String(isReversal.value));
     form.append("tolerance", String(tolerance.value));
     form.append("imageStyle", imageStyle.value);
@@ -230,6 +239,20 @@ onMounted(init);
         <span>反色</span>
         <input v-model="isReversal" type="checkbox" />
       </div>
+      <div class="setting-row">
+        <span>AI 优化</span>
+        <input v-model="isAI" type="checkbox" />
+      </div>
+      <div v-if="isAI" class="ai-style-panel">
+        <button
+          v-for="style in aiStyles"
+          :key="style.value"
+          :class="{ active: aiStyle === style.value }"
+          @click="aiStyle = style.value"
+        >
+          {{ style.label }}
+        </button>
+      </div>
 
       <hr />
       <header><SlidersHorizontal :size="24" /><strong>细节调整</strong></header>
@@ -241,16 +264,25 @@ onMounted(init);
         <span>长边尺寸：{{ gridSize }}</span>
         <input v-model.number="gridSize" type="range" min="32" max="96" step="16" />
       </label>
-      <label class="slider">
-        <span>颜色数量：{{ colorLimit }}</span>
-        <input v-model.number="colorLimit" type="range" min="8" max="30" step="2" />
-      </label>
+      <div class="setting-block">
+        <span>颜色数量：{{ colorLimit === "auto" ? "自动" : colorLimit }}</span>
+        <div class="option-row">
+          <button
+            v-for="option in config?.colorLimit.list ?? []"
+            :key="String(option.value)"
+            :class="{ active: colorLimit === option.value }"
+            @click="colorLimit = option.value"
+          >
+            {{ option.label }}
+          </button>
+        </div>
+      </div>
     </section>
 
     <p class="counts">（普通次数：{{ countText(customer.regularCount) }}，<span>AI 次数：{{ countText(customer.memberCount) }}</span>）</p>
 
     <section class="actions">
-      <button class="generate" @click="generate"><Sparkles :size="26" />{{ loadingText }}</button>
+      <button class="generate" @click="generate"><Sparkles :size="26" />{{ generateButtonText }}</button>
       <button class="history" @click="showHistory = true"><History :size="24" />历史</button>
     </section>
 
@@ -292,7 +324,7 @@ onMounted(init);
 
     <div v-if="loading" class="loading">
       <div class="spinner"></div>
-      <p>普通模式通常很快完成</p>
+      <p>{{ isAI ? "AI 优化需要更久，请稍等" : "普通模式通常很快完成" }}</p>
       <p>生成后图纸会显示在下方</p>
     </div>
 

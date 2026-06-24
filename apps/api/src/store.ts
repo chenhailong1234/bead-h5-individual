@@ -1,4 +1,5 @@
 ﻿import { randomUUID } from "node:crypto";
+import { mard221Palette } from "./data/mard221";
 
 export type UserRecord = {
   id: string;
@@ -47,12 +48,15 @@ export type BeadTaskRecord = {
   userId: string;
   status: "running" | "succeeded" | "failed" | "violation";
   gridSize: number;
-  colorLimit: number;
+  colorLimit: number | "auto";
+  selectedColorCount?: number;
   brand: string;
   isReversal: boolean;
   isAI: boolean;
   tolerance: number;
   imageStyle: string;
+  aiStyle?: "remove-background" | "cartoonize" | "remove-background-cartoonize";
+  optimizedPath?: string;
   deductedCountType?: "regular" | "ai";
   deductedCount: number;
   originalPath?: string;
@@ -67,33 +71,6 @@ export type BeadTaskRecord = {
   completedAt?: Date;
 };
 
-const mardPalette = [
-  { name: "H16", hex: "#171719" },
-  { name: "H6", hex: "#303135" },
-  { name: "B23", hex: "#526050" },
-  { name: "M7", hex: "#8f8980" },
-  { name: "H4", hex: "#a7acaa" },
-  { name: "M9", hex: "#b99d78" },
-  { name: "G17", hex: "#8f5b5b" },
-  { name: "H8", hex: "#eadadd" },
-  { name: "F20", hex: "#ee94ac" },
-  { name: "M15", hex: "#708a7e" },
-  { name: "M12", hex: "#64504d" },
-  { name: "G14", hex: "#6f3e33" },
-  { name: "G8", hex: "#793737" },
-  { name: "M1", hex: "#eef3e9" },
-  { name: "B22", hex: "#7ecb72" },
-  { name: "B18", hex: "#b8e3a6" },
-  { name: "P6", hex: "#f3b9c8" },
-  { name: "P3", hex: "#e87da1" },
-  { name: "Y5", hex: "#d4b15d" },
-  { name: "C4", hex: "#75bdd3" },
-  { name: "V6", hex: "#8066ae" },
-  { name: "W1", hex: "#ffffff" },
-  { name: "O7", hex: "#c4763b" },
-  { name: "R2", hex: "#b92e35" }
-];
-
 export const defaultConfig = {
   uploadData: {
     title: "点击上传图片",
@@ -101,14 +78,14 @@ export const defaultConfig = {
     typeList: ["jpg", "png", "jpeg", "webp"],
     remark: "单张图片最大 10MB"
   },
-  brandList: [{ name: "MARD", label: "MARD", colors: mardPalette }],
+  brandList: [{ name: "MARD", label: "MARD", colors: mard221Palette }],
   styleList: [
     { name: "卡通", icon: "" },
     { name: "写实", icon: "" },
     { name: "像素", icon: "" }
   ],
   isReversal: { name: "反色", value: false, tips: "反转明暗区域" },
-  isAI: { name: "AI 优化", value: false, tips: "预留 AI 生成能力" },
+  isAI: { name: "AI 优化", value: false, tips: "去背景、卡通化或去背景+卡通化后再生成图纸" },
   tolerance: {
     name: "容差",
     value: 0,
@@ -135,11 +112,13 @@ export const defaultConfig = {
     value: 16,
     tips: "最多使用的色号数量",
     list: [
-      { label: "8", value: 8 },
-      { label: "12", value: 12 },
       { label: "16", value: 16 },
       { label: "24", value: 24 },
-      { label: "30", value: 30 }
+      { label: "32", value: 32 },
+      { label: "42", value: 42 },
+      { label: "64", value: 64 },
+      { label: "96", value: 96 },
+      { label: "自动", value: "auto" }
     ]
   }
 };
@@ -201,6 +180,11 @@ export class MemoryStore {
 }
 
 export const store = new MemoryStore();
+
+
+
+
+
 
 
 

@@ -3,7 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import sharp from "sharp";
 import { describe, expect, it } from "vitest";
-import { calculateGridDimensions, generateBeadImages, limitPalette, nearestPaletteColor, summarizeUsage } from "../src/services/beadGenerator";
+import { calculateGridDimensions, generateBeadImages, limitPalette, nearestPaletteColor, selectPaletteForImageColors, summarizeUsage } from "../src/services/beadGenerator";
 
 describe("bead generator helpers", () => {
   const palette = [
@@ -21,6 +21,21 @@ describe("bead generator helpers", () => {
     expect(limitPalette(palette, 2)).toHaveLength(2);
     expect(limitPalette(palette, 99)).toHaveLength(3);
     expect(limitPalette(palette, 0)).toHaveLength(1);
+  });
+
+  it("selects image-aware colors beyond the first palette entries", () => {
+    const richPalette = Array.from({ length: 35 }, (_, index) => ({
+      name: `C${index + 1}`,
+      hex: index === 34 ? "#7f5ac7" : `#${(index + 1).toString(16).padStart(2, "0")}0000`
+    }));
+
+    const selected = selectPaletteForImageColors(
+      Array.from({ length: 20 }, () => ({ r: 127, g: 90, b: 199 })),
+      richPalette,
+      1
+    );
+
+    expect(selected).toEqual([{ name: "C35", hex: "#7f5ac7" }]);
   });
 
   it("uses the requested grid size as the long side and preserves source aspect ratio", () => {
