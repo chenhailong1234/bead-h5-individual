@@ -48,8 +48,37 @@ export function buildVolcengineImageRequest(imageDataUrl: string, style: AiStyle
   };
 }
 
+async function fetchWithTimeout(
+  input: Parameters<typeof fetch>[0],
+  init: Parameters<typeof fetch>[1],
+  timeoutMs: number,
+  stage: string
+) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(input, { ...init, signal: controller.signal });
+  } catch (error) {
+    const providerMessage = error instanceof Error ? error.message : String(error);
+    const providerCode = error instanceof Error ? error.name : "";
+    console.error("AI network request failed", {
+      stage,
+      providerCode,
+      providerMessage,
+      timeoutMs
+    });
+    throw new AiImageError("AI_NETWORK_FAILED", "AI 请求超时或网络失败，请稍后再试", {
+      providerCode,
+      providerMessage,
+      stage
+    });
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
 async function downloadImage(url: string, outputPath: string) {
-  const response = await fetch(url);
+  const response = await fetchWithTimeout(url, undefined, 60_000, "download");
   if (!response.ok) {
     throw new AiImageError("AI_IMAGE_DOWNLOAD_FAILED", "AI 图片下载失败", { status: response.status, stage: "download" });
   }
@@ -66,14 +95,19 @@ export const volcengineAiImageProvider: AiImageProvider = {
     await mkdir(outputDir, { recursive: true });
     const imageDataUrl = await imageFileToDataUrl(inputPath);
     const requestBody = buildVolcengineImageRequest(imageDataUrl, style);
-    const response = await fetch(`${env.ai.volcengineBaseUrl.replace(/\/$/, "")}/images/generations`, {
+    console.info("AI provider request started", {
+      model: env.ai.volcengineImageModel,
+      style,
+      stage: "provider"
+    });
+    const response = await fetchWithTimeout(`${env.ai.volcengineBaseUrl.replace(/\/$/, "")}/images/generations`, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${env.ai.volcengineApiKey}`,
         "Content-Type": "application/json"
       },
       body: JSON.stringify(requestBody)
-    });
+    }, 180_000, "provider");
 
     if (!response.ok) {
       const errorText = await response.text().catch(() => "");
@@ -101,6 +135,12 @@ export const volcengineAiImageProvider: AiImageProvider = {
 
     const data = await response.json() as { data?: Array<{ url?: string; b64_json?: string }> };
     const item = data.data?.[0];
+    console.info("AI provider request completed", {
+      model: env.ai.volcengineImageModel,
+      hasBase64: Boolean(item?.b64_json),
+      hasUrl: Boolean(item?.url),
+      stage: "provider"
+    });
     const outputPath = join(outputDir, "ai-optimized.png");
     if (item?.b64_json) {
       await writeFile(outputPath, Buffer.from(item.b64_json, "base64"));
@@ -118,3 +158,4 @@ export const volcengineAiImageProvider: AiImageProvider = {
 export function getAiImageProvider(): AiImageProvider {
   return volcengineAiImageProvider;
 }
+
