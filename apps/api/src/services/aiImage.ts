@@ -33,10 +33,11 @@ export function promptForAiStyle(style: AiStyle) {
 export async function imageFileToDataUrl(inputPath: string) {
   const buffer = await sharp(inputPath)
     .rotate()
-    .resize({ width: 1536, height: 1536, fit: "inside", withoutEnlargement: true })
-    .png()
+    .resize({ width: 1024, height: 1024, fit: "inside", withoutEnlargement: true })
+    .flatten({ background: "#ffffff" })
+    .jpeg({ quality: 88, mozjpeg: true })
     .toBuffer();
-  return `data:image/png;base64,${buffer.toString("base64")}`;
+  return `data:image/jpeg;base64,${buffer.toString("base64")}`;
 }
 
 export function buildVolcengineImageRequest(imageDataUrl: string, style: AiStyle) {
@@ -158,4 +159,5 @@ export const volcengineAiImageProvider: AiImageProvider = {
 export function getAiImageProvider(): AiImageProvider {
   return volcengineAiImageProvider;
 }
+
 
