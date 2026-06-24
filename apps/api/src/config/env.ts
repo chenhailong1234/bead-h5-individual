@@ -1,4 +1,32 @@
-﻿import { resolve } from "node:path";
+﻿import { existsSync, readFileSync } from "node:fs";
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
+
+function loadLocalEnv() {
+  const here = dirname(fileURLToPath(import.meta.url));
+  const candidates = [
+    resolve(process.cwd(), ".env.local"),
+    resolve(process.cwd(), "../../.env.local"),
+    resolve(here, "../../../../.env.local")
+  ];
+
+  for (const path of candidates) {
+    if (!existsSync(path)) continue;
+    const lines = readFileSync(path, "utf8").split(/\r?\n/);
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (!trimmed || trimmed.startsWith("#")) continue;
+      const separator = trimmed.indexOf("=");
+      if (separator <= 0) continue;
+      const key = trimmed.slice(0, separator).trim();
+      const value = trimmed.slice(separator + 1).trim();
+      process.env[key] ??= value;
+    }
+    return;
+  }
+}
+
+loadLocalEnv();
 
 export const env = {
   port: Number(process.env.PORT ?? 4000),
