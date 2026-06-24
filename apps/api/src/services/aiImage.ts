@@ -10,7 +10,11 @@ export type AiImageProvider = {
 };
 
 export class AiImageError extends Error {
-  constructor(public code: string, message: string) {
+  constructor(
+    public code: string,
+    message: string,
+    public details: { status?: number; providerCode?: string; providerMessage?: string; stage?: string } = {}
+  ) {
     super(message);
   }
 }
@@ -47,7 +51,7 @@ export function buildVolcengineImageRequest(imageDataUrl: string, style: AiStyle
 async function downloadImage(url: string, outputPath: string) {
   const response = await fetch(url);
   if (!response.ok) {
-    throw new AiImageError("AI_IMAGE_DOWNLOAD_FAILED", "AI 图片下载失败");
+    throw new AiImageError("AI_IMAGE_DOWNLOAD_FAILED", "AI 图片下载失败", { status: response.status, stage: "download" });
   }
   const arrayBuffer = await response.arrayBuffer();
   await writeFile(outputPath, Buffer.from(arrayBuffer));
@@ -56,7 +60,7 @@ async function downloadImage(url: string, outputPath: string) {
 export const volcengineAiImageProvider: AiImageProvider = {
   async optimizeImage(inputPath, style, outputDir) {
     if (!isAIConfigured()) {
-      throw new AiImageError("AI_NOT_CONFIGURED", "AI 服务暂未配置");
+      throw new AiImageError("AI_NOT_CONFIGURED", "AI 服务暂未配置", { stage: "config" });
     }
 
     await mkdir(outputDir, { recursive: true });
@@ -72,7 +76,27 @@ export const volcengineAiImageProvider: AiImageProvider = {
     });
 
     if (!response.ok) {
-      throw new AiImageError("AI_PROVIDER_FAILED", "AI 优化失败，请稍后再试");
+      const errorText = await response.text().catch(() => "");
+      let providerCode = "";
+      let providerMessage = errorText.slice(0, 500);
+      try {
+        const parsed = JSON.parse(errorText) as { error?: { code?: string; message?: string }; code?: string; message?: string };
+        providerCode = parsed.error?.code ?? parsed.code ?? "";
+        providerMessage = parsed.error?.message ?? parsed.message ?? providerMessage;
+      } catch {}
+      console.error("AI provider request failed", {
+        status: response.status,
+        providerCode,
+        providerMessage,
+        model: env.ai.volcengineImageModel,
+        stage: "provider"
+      });
+      throw new AiImageError("AI_PROVIDER_FAILED", "AI 优化失败，请稍后再试", {
+        status: response.status,
+        providerCode,
+        providerMessage,
+        stage: "provider"
+      });
     }
 
     const data = await response.json() as { data?: Array<{ url?: string; b64_json?: string }> };
@@ -87,7 +111,7 @@ export const volcengineAiImageProvider: AiImageProvider = {
       return { outputPath };
     }
 
-    throw new AiImageError("AI_EMPTY_RESULT", "AI 未返回图片");
+    throw new AiImageError("AI_EMPTY_RESULT", "AI 未返回图片", { stage: "provider" });
   }
 };
 

@@ -5,7 +5,7 @@ import { defaultConfig, store, type BeadTaskRecord } from "../store";
 import { requireUser } from "../middleware/session";
 import { deductForTask, refundForTask } from "../services/counts";
 import { generateBeadImages } from "../services/beadGenerator";
-import { getAiImageProvider } from "../services/aiImage";
+import { AiImageError, getAiImageProvider } from "../services/aiImage";
 import { publicUrl, saveUpload, taskOutputDir } from "../services/storage";
 
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: defaultConfig.uploadData.maxLength } });
@@ -101,12 +101,28 @@ beadRouter.post("/upload", requireUser, upload.single("file"), async (req, res) 
   } catch (error) {
     const current = store.users.get(user.id)!;
     store.updateUserCounts(user.id, refundForTask(current, task.deductedCountType, task.deductedCount));
+    const isAiError = error instanceof AiImageError;
+    const errorMessage = error instanceof Error ? error.message : "生成失败";
     Object.assign(task, {
       status: "failed" as const,
-      errorMessage: error instanceof Error ? error.message : "生成失败",
+      errorMessage,
       completedAt: new Date()
     });
-    res.status(500).json({ code: "TASK_FAILED", message: "生成失败" });
+    console.error("Bead task failed", {
+      taskId: task.id,
+      userId: task.userId,
+      isAI: task.isAI,
+      aiStyle: task.aiStyle,
+      errorCode: isAiError ? error.code : "TASK_FAILED",
+      errorMessage,
+      details: isAiError ? error.details : undefined,
+      refunded: task.deductedCount,
+      refundedType: task.deductedCountType
+    });
+    res.status(500).json({
+      code: isAiError ? error.code : "TASK_FAILED",
+      message: isAiError ? errorMessage : "生成失败"
+    });
   }
 });
 
