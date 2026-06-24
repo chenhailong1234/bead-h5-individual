@@ -1,0 +1,434 @@
+﻿:root {
+  font-family: Inter, "PingFang SC", "Microsoft YaHei", sans-serif;
+  color: #17151f;
+  background: #f1eefa;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+}
+
+button {
+  border: 0;
+  font: inherit;
+}
+
+.page {
+  max-width: 720px;
+  min-height: 100vh;
+  margin: 0 auto;
+  padding: 16px;
+  background: #f1eefa;
+}
+
+.banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 126px;
+  padding: 18px 22px;
+  color: #fff;
+  border-radius: 18px;
+  background:
+    radial-gradient(circle at 15% 60%, #ffca46 0 18px, transparent 19px),
+    radial-gradient(circle at 70% 25%, #ff87c8 0 24px, transparent 25px),
+    linear-gradient(100deg, #6559fc, #9c63ff 48%, #ff49c7);
+  box-shadow: 0 10px 22px rgba(101, 89, 252, 0.25);
+}
+
+.banner strong {
+  display: block;
+  font-size: 34px;
+  line-height: 1.05;
+}
+
+.banner span {
+  display: block;
+  margin-top: 8px;
+  font-weight: 700;
+}
+
+.banner button,
+.history,
+.generate {
+  color: #fff;
+  cursor: pointer;
+}
+
+.banner button {
+  flex: 0 0 auto;
+  padding: 12px 16px;
+  border-radius: 999px;
+  background: #ff5dae;
+  font-weight: 800;
+}
+
+.upload-card,
+.card,
+.result {
+  display: flex;
+  width: 100%;
+  margin-top: 16px;
+  padding: 24px;
+  border-radius: 24px;
+  background: #fff;
+  box-shadow: 0 6px 16px rgba(52, 43, 87, 0.08);
+}
+
+.upload-card {
+  align-items: center;
+  gap: 22px;
+  cursor: pointer;
+}
+
+.upload-card input {
+  display: none;
+}
+
+.upload-art {
+  display: grid;
+  place-items: center;
+  width: 150px;
+  height: 150px;
+  color: #7668f6;
+  border: 2px dashed rgba(118, 104, 246, 0.3);
+  border-radius: 22px;
+  background: #f5f2ff;
+  overflow: hidden;
+}
+
+.upload-art img,
+.result img,
+.history-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+h1,
+h2,
+h3,
+p {
+  margin: 0;
+}
+
+h1 {
+  font-size: 20px;
+}
+
+.types {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 12px 0;
+}
+
+.types span {
+  padding: 4px 10px;
+  border-radius: 999px;
+  color: #fff;
+  background: #b6a1f7;
+  font-size: 22px;
+  line-height: 1;
+}
+
+.upload-card p {
+  color: #9b98a8;
+  font-size: 20px;
+}
+
+.card {
+  display: block;
+}
+
+.card header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.card header svg {
+  color: #7668f6;
+}
+
+.brand-row,
+.style-row,
+.tabs {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+}
+
+.brand-row button,
+.style-row button,
+.tabs button {
+  min-width: 78px;
+  padding: 10px 14px;
+  border-radius: 14px;
+  color: #6d638a;
+  background: #f2efff;
+  font-weight: 700;
+}
+
+.brand-row button.active,
+.style-row button.active,
+.tabs button.active {
+  color: #fff;
+  background: #7668f6;
+}
+
+.setting-row,
+.slider {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 42px;
+  font-weight: 700;
+}
+
+.setting-row input {
+  width: 22px;
+  height: 22px;
+}
+
+.slider {
+  gap: 16px;
+}
+
+.slider input {
+  flex: 1;
+  accent-color: #7668f6;
+}
+
+hr {
+  border: 0;
+  border-top: 1px solid #eeeaf8;
+  margin: 16px 0;
+}
+
+.counts {
+  margin: 18px 0 8px;
+  text-align: center;
+  font-weight: 800;
+}
+
+.counts span {
+  color: #7668f6;
+}
+
+.actions {
+  display: flex;
+  gap: 14px;
+}
+
+.generate,
+.history {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 86px;
+  border-radius: 24px;
+  font-size: 24px;
+  font-weight: 900;
+}
+
+.generate {
+  flex: 1;
+  background: linear-gradient(100deg, #6158fc, #9a84fb 48%, #cf46ff);
+}
+
+.history {
+  width: 132px;
+  background: #7668f6;
+}
+
+.result {
+  display: block;
+}
+
+.result img {
+  display: block;
+  height: auto;
+  margin-top: 14px;
+  border-radius: 16px;
+  background: #f8f7ff;
+}
+
+
+.modal,
+.loading {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(0, 0, 0, 0.52);
+}
+
+.sheet {
+  position: relative;
+  width: min(620px, 100%);
+  padding: 24px;
+  border-radius: 20px;
+  background: #fff;
+}
+
+.close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  color: #fff;
+  background: #b6a1f7;
+}
+
+.package {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  margin-top: 10px;
+  padding: 16px;
+  border: 1px solid rgba(118, 104, 246, 0.2);
+  border-radius: 14px;
+  background: #f8f6ff;
+}
+
+.drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  z-index: 18;
+  width: min(480px, 86vw);
+  height: 100vh;
+  padding: 18px;
+  background: #fff;
+  box-shadow: -12px 0 28px rgba(29, 22, 52, 0.16);
+}
+
+.drawer header {
+  display: flex;
+  justify-content: space-between;
+}
+
+.history-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  margin-top: 12px;
+  padding: 10px;
+  border-bottom: 1px solid #eeeaf8;
+  background: transparent;
+  text-align: left;
+}
+
+.history-item img {
+  width: 52px;
+  height: 52px;
+  border-radius: 10px;
+}
+
+.history-item span {
+  flex: 1;
+  font-weight: 800;
+}
+
+.history-item small {
+  display: block;
+  color: #8d879d;
+  font-weight: 400;
+}
+
+.history-item em {
+  color: #22a45d;
+  font-style: normal;
+}
+
+.empty {
+  margin-top: 40px;
+  color: #8d879d;
+  text-align: center;
+}
+
+.spinner {
+  width: 58px;
+  height: 58px;
+  border: 6px solid rgba(255, 255, 255, 0.4);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+.loading p {
+  margin-top: 12px;
+  color: #fff;
+}
+
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: 32px;
+  z-index: 30;
+  transform: translateX(-50%);
+  padding: 10px 16px;
+  border-radius: 999px;
+  color: #fff;
+  background: rgba(0, 0, 0, 0.72);
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (max-width: 520px) {
+  .page {
+    padding: 12px;
+  }
+
+  .banner {
+    min-height: 100px;
+  }
+
+  .banner strong {
+    font-size: 25px;
+  }
+
+  .upload-card {
+    padding: 16px;
+    gap: 14px;
+  }
+
+  .upload-art {
+    width: 112px;
+    height: 112px;
+  }
+
+  .types span,
+  .upload-card p,
+  .generate,
+  .history {
+    font-size: 18px;
+  }
+
+  .history {
+    width: 112px;
+  }
+}
+
+
+
+
+

@@ -1,0 +1,20 @@
+{
+  "name": "@bead/web",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 0.0.0.0",
+    "build": "vue-tsc -b && vite build",
+    "typecheck": "vue-tsc -b"
+  },
+  "dependencies": {
+    "@vitejs/plugin-vue": "^5.1.2",
+    "lucide-vue-next": "^0.468.0",
+    "vue": "^3.4.38"
+  },
+  "devDependencies": {
+    "typescript": "^5.5.4",
+    "vite": "^5.4.2",
+    "vue-tsc": "^2.0.29"
+  }
+}

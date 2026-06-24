@@ -1,0 +1,77 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String         @id @default(cuid())
+  openid       String         @unique
+  nickname     String?
+  avatarUrl    String?
+  regularCount Int            @default(1)
+  memberCount  Int            @default(0)
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  orders       PaymentOrder[]
+  tasks        BeadTask[]
+}
+
+model VipPackage {
+  id            String         @id
+  type          String
+  title         String
+  remark        String
+  originalPrice Int
+  currentPrice  Int
+  count         Int
+  enabled       Boolean        @default(true)
+  sortOrder     Int            @default(0)
+  orders        PaymentOrder[]
+}
+
+model PaymentOrder {
+  id           String     @id @default(cuid())
+  userId       String
+  vipPackageId String
+  outTradeNo   String     @unique
+  amount       Int
+  status       String     @default("pending")
+  transactionId String?
+  rawNotify    String?
+  createdAt    DateTime   @default(now())
+  paidAt       DateTime?
+  user         User       @relation(fields: [userId], references: [id])
+  vipPackage   VipPackage @relation(fields: [vipPackageId], references: [id])
+}
+
+model BeadTask {
+  id                String    @id @default(cuid())
+  userId            String
+  status            String    @default("running")
+  gridSize          Int
+  colorLimit        Int
+  brand             String
+  isReversal        Boolean   @default(false)
+  isAI              Boolean   @default(false)
+  tolerance         Int       @default(0)
+  imageStyle        String    @default("卡通")
+  deductedCountType String?
+  deductedCount     Int       @default(0)
+  originalPath      String?
+  resultPath        String?
+  previewPath       String?
+  errorMessage      String?
+  createdAt         DateTime  @default(now())
+  completedAt       DateTime?
+  user              User      @relation(fields: [userId], references: [id])
+}
+
+model AppConfig {
+  key       String   @id
+  valueJson String
+  updatedAt DateTime @updatedAt
+}

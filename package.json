@@ -1,0 +1,13 @@
+{
+  "name": "bead-h5-commercial",
+  "private": true,
+  "scripts": {
+    "dev": "pnpm --recursive --parallel dev",
+    "build": "pnpm --recursive build",
+    "test": "pnpm --filter @bead/api test",
+    "typecheck": "pnpm --recursive typecheck"
+  },
+  "devDependencies": {
+    "typescript": "^5.5.4"
+  }
+}
