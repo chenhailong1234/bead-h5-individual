@@ -58,7 +58,7 @@ beadRouter.post("/upload", requireUser, upload.single("file"), async (req, res) 
     brand: String(req.body.brand ?? "MARD"),
     isReversal: parseBool(req.body.isReversal),
     isAI,
-    tolerance: Number(req.body.tolerance ?? 0),
+    tolerance: 0,
     imageStyle: String(req.body.imageStyle ?? "卡通"),
     aiStyle: parseAiStyle(req.body.aiStyle),
     deductedCountType: deduction.type,
@@ -167,4 +167,5 @@ beadRouter.get("/queryBeadLogList", requireUser, (req, res) => {
     }));
   res.json(tasks);
 });
+
 

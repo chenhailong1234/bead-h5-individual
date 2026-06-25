@@ -26,7 +26,6 @@ const isAI = ref(false);
 const isReversal = ref(false);
 const imageStyle = ref("卡通");
 const aiStyle = ref<"remove-background" | "cartoonize" | "remove-background-cartoonize">("remove-background-cartoonize");
-const tolerance = ref(0);
 const gridSize = ref(64);
 const colorLimit = ref<number | "auto">(16);
 const currentTask = ref<BeadTask | null>(null);
@@ -99,9 +98,7 @@ async function init() {
   packages.value = vip;
   history.value = logs;
   selectedBrand.value = cfg.brandList[0]?.name ?? "MARD";
-  imageStyle.value = cfg.styleList[0]?.name ?? "Cartoon";
-  tolerance.value = cfg.tolerance.value;
-  gridSize.value = cfg.gridSize.value;
+  imageStyle.value = cfg.styleList[0]?.name ?? "Cartoon";  gridSize.value = cfg.gridSize.value;
   colorLimit.value = cfg.colorLimit.value;
 }
 
@@ -163,7 +160,7 @@ async function generate() {
     form.append("isAI", String(isAI.value));
     form.append("aiStyle", aiStyle.value);
     form.append("isReversal", String(isReversal.value));
-    form.append("tolerance", String(tolerance.value));
+    form.append("tolerance", "0");
     form.append("imageStyle", imageStyle.value);
     form.append("logId", currentTask.value?.id ?? "");
     const created = await uploadBeadTask(form);
@@ -256,10 +253,7 @@ onMounted(init);
 
       <hr />
       <header><SlidersHorizontal :size="24" /><strong>细节调整</strong></header>
-      <label class="slider">
-        <span>容差：{{ tolerance }}</span>
-        <input v-model.number="tolerance" type="range" min="0" max="24" step="12" />
-      </label>
+
       <label class="slider">
         <span>长边尺寸：{{ gridSize }}</span>
         <input v-model.number="gridSize" type="range" min="32" max="96" step="16" />
@@ -331,6 +325,8 @@ onMounted(init);
     <div v-if="toast" class="toast">{{ toast }}</div>
   </main>
 </template>
+
+
 
 
 

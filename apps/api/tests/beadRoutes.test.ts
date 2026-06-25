@@ -52,6 +52,26 @@ describe("bead routes", () => {
     expect(existsSync(task.body.absoluteResultPath)).toBe(true);
   });
 
+
+  it("forces tolerance to zero even if the client sends another value", async () => {
+    const agent = request.agent(createApp());
+    await agent.post("/api/auth/dev-login");
+
+    const upload = await agent
+      .post("/api/app/bead/upload")
+      .field("gridSize", "8")
+      .field("colorLimit", "8")
+      .field("brand", "MARD")
+      .field("isAI", "false")
+      .field("isReversal", "false")
+      .field("tolerance", "24")
+      .field("imageStyle", "卡通")
+      .attach("file", await sampleImage(), "sample.png");
+
+    expect(upload.status).toBe(200);
+    const task = await agent.get(`/api/app/bead/getBeadTask?logId=${upload.body.msg}`);
+    expect(task.body.tolerance).toBe(0);
+  });
   it("rejects generation when normal count is empty", async () => {
     const agent = request.agent(createApp());
     const login = await agent.post("/api/auth/dev-login");
@@ -122,4 +142,5 @@ describe("bead routes", () => {
     expect(upload.body.code).toBe("FILE_TOO_LARGE");
   });
 });
+
 
