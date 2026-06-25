@@ -11,7 +11,7 @@ export type Brand = {
 
 export type SettingOption = {
   label: string;
-  value: number | "auto";
+  value: number | string | "auto";
 };
 
 export type SliderSetting = {
@@ -81,3 +81,4 @@ export type HistoryItem = {
   height?: number;
   totalBeads?: number;
 };
+

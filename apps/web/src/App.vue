@@ -26,8 +26,19 @@ const isAI = ref(false);
 const isReversal = ref(false);
 const imageStyle = ref("卡通");
 const aiStyle = ref<"remove-background" | "cartoonize" | "remove-background-cartoonize">("remove-background-cartoonize");
-const gridSize = ref(64);
+const boardSize = ref("78x78");
 const colorLimit = ref<number | "auto">(16);
+const boardOptions = [
+  { label: "52 x 52", value: "52x52" },
+  { label: "52 x 104", value: "52x104" },
+  { label: "104 x 52", value: "104x52" },
+  { label: "78 x 78", value: "78x78" },
+  { label: "78 x 156", value: "78x156" },
+  { label: "156 x 78", value: "156x78" },
+  { label: "104 x 104", value: "104x104" },
+  { label: "104 x 208", value: "104x208" },
+  { label: "208 x 104", value: "208x104" }
+];
 const currentTask = ref<BeadTask | null>(null);
 const activeTab = ref<"original" | "result" | "preview">("preview");
 const loading = ref(false);
@@ -44,6 +55,7 @@ const aiStyles = [
 
 const currentImage = computed(() => currentTask.value?.[activeTab.value] ?? "");
 const normalPackages = computed(() => packages.value.filter((item) => item.type === "normal"));
+const colorOptions = computed(() => (config.value?.colorLimit.list ?? []) as Array<{ label: string; value: number | "auto" }>);
 const aiPackages = computed(() => packages.value.filter((item) => item.type === "ai"));
 const taskSummary = computed(() => {
   if (!currentTask.value?.width || !currentTask.value?.height) return "";
@@ -98,7 +110,8 @@ async function init() {
   packages.value = vip;
   history.value = logs;
   selectedBrand.value = cfg.brandList[0]?.name ?? "MARD";
-  imageStyle.value = cfg.styleList[0]?.name ?? "Cartoon";  gridSize.value = cfg.gridSize.value;
+  imageStyle.value = cfg.styleList[0]?.name ?? "Cartoon";
+  boardSize.value = String(cfg.gridSize.value ?? "78x78");
   colorLimit.value = cfg.colorLimit.value;
 }
 
@@ -154,7 +167,8 @@ async function generate() {
     }
     loadingText.value = "正在生成图纸...";
     form.append("file", uploadFile);
-    form.append("gridSize", String(gridSize.value));
+    form.append("boardSize", boardSize.value);
+    form.append("gridSize", boardSize.value.split("x").reduce((max, item) => Math.max(max, Number(item)), 0).toString());
     form.append("colorLimit", String(colorLimit.value));
     form.append("brand", selectedBrand.value);
     form.append("isAI", String(isAI.value));
@@ -254,15 +268,24 @@ onMounted(init);
       <hr />
       <header><SlidersHorizontal :size="24" /><strong>细节调整</strong></header>
 
-      <label class="slider">
-        <span>长边尺寸：{{ gridSize }}</span>
-        <input v-model.number="gridSize" type="range" min="32" max="96" step="16" />
-      </label>
+      <div class="setting-block">
+        <span>豆板规格：{{ boardSize.replace("x", " x ") }}</span>
+        <div class="option-row board-options">
+          <button
+            v-for="option in boardOptions"
+            :key="option.value"
+            :class="{ active: boardSize === option.value }"
+            @click="boardSize = option.value"
+          >
+            {{ option.label }}
+          </button>
+        </div>
+      </div>
       <div class="setting-block">
         <span>颜色数量：{{ colorLimit === "auto" ? "自动" : colorLimit }}</span>
         <div class="option-row">
           <button
-            v-for="option in config?.colorLimit.list ?? []"
+            v-for="option in colorOptions"
             :key="String(option.value)"
             :class="{ active: colorLimit === option.value }"
             @click="colorLimit = option.value"
@@ -325,6 +348,8 @@ onMounted(init);
     <div v-if="toast" class="toast">{{ toast }}</div>
   </main>
 </template>
+
+
 
 
 

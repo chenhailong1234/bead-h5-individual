@@ -22,6 +22,8 @@ export type ColorUsage = {
 export type GenerateOptions = {
   outputDir: string;
   gridSize: number;
+  gridWidth?: number;
+  gridHeight?: number;
   colorLimit: number | "auto";
   isReversal: boolean;
   tolerance: number;
@@ -39,7 +41,10 @@ export type GeneratedImages = {
   usage: ColorUsage[];
 };
 
-export function calculateGridDimensions(sourceWidth: number, sourceHeight: number, longSide: number) {
+export function calculateGridDimensions(sourceWidth: number, sourceHeight: number, longSide: number, exactWidth?: number, exactHeight?: number) {
+  if (exactWidth && exactHeight) {
+    return { width: exactWidth, height: exactHeight };
+  }
   if (sourceWidth <= 0 || sourceHeight <= 0) {
     return { width: longSide, height: longSide };
   }
@@ -197,6 +202,16 @@ function applyTolerance(rgb: Rgb, tolerance: number): Rgb {
   return { r: push(rgb.r), g: push(rgb.g), b: push(rgb.b) };
 }
 
+async function averageImageColor(inputPath: string) {
+  const stats = await sharp(inputPath).rotate().resize(32, 32, { fit: "inside" }).stats();
+  const [r, g, b] = stats.channels;
+  return {
+    r: Math.round(r.mean),
+    g: Math.round(g.mean),
+    b: Math.round(b.mean),
+    alpha: 1
+  };
+}
 function renderResultSvg(colors: PaletteColor[], widthCells: number, heightCells: number, cellSize: number) {
   const width = widthCells * cellSize;
   const height = heightCells * cellSize;
@@ -257,7 +272,7 @@ export async function generateBeadImages(inputPath: string, options: GenerateOpt
   const resultPath = join(options.outputDir, "result.png");
   const previewPath = join(options.outputDir, "preview.png");
   const metadata = await sharp(inputPath).rotate().metadata();
-  const dimensions = calculateGridDimensions(metadata.width ?? options.gridSize, metadata.height ?? options.gridSize, options.gridSize);
+  const dimensions = calculateGridDimensions(metadata.width ?? options.gridSize, metadata.height ?? options.gridSize, options.gridSize, options.gridWidth, options.gridHeight);
 
   const normalized = sharp(inputPath)
     .rotate()
@@ -267,7 +282,7 @@ export async function generateBeadImages(inputPath: string, options: GenerateOpt
 
   const raw = await sharp(inputPath)
     .rotate()
-    .resize(dimensions.width, dimensions.height, { fit: "fill" })
+    .resize(dimensions.width, dimensions.height, { fit: "contain", background: await averageImageColor(inputPath) })
     .raw()
     .ensureAlpha()
     .toBuffer();
@@ -295,6 +310,9 @@ export async function generateBeadImages(inputPath: string, options: GenerateOpt
     usage
   };
 }
+
+
+
 
 
 

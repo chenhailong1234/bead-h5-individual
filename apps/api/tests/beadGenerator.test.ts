@@ -38,9 +38,9 @@ describe("bead generator helpers", () => {
     expect(selected).toEqual([{ name: "C35", hex: "#7f5ac7" }]);
   });
 
-  it("uses the requested grid size as the long side and preserves source aspect ratio", () => {
-    expect(calculateGridDimensions(37, 64, 64)).toEqual({ width: 37, height: 64 });
-    expect(calculateGridDimensions(1200, 800, 64)).toEqual({ width: 64, height: 43 });
+  it("uses exact board dimensions when they are provided", () => {
+    expect(calculateGridDimensions(37, 64, 64, 52, 104)).toEqual({ width: 52, height: 104 });
+    expect(calculateGridDimensions(1200, 800, 64, 156, 78)).toEqual({ width: 156, height: 78 });
   });
 
   it("summarizes color usage by bead code", () => {
@@ -69,6 +69,8 @@ describe("bead generator helpers", () => {
     const output = await generateBeadImages(inputPath, {
       outputDir: dir,
       gridSize: 8,
+      gridWidth: 52,
+      gridHeight: 104,
       colorLimit: 2,
       isReversal: false,
       tolerance: 0,
@@ -78,22 +80,24 @@ describe("bead generator helpers", () => {
     expect(existsSync(output.originalPath)).toBe(true);
     expect(existsSync(output.resultPath)).toBe(true);
     expect(existsSync(output.previewPath)).toBe(true);
-    expect(output.width).toBe(4);
-    expect(output.height).toBe(8);
-    expect(output.totalBeads).toBe(32);
-    expect(output.usage.reduce((sum, item) => sum + item.count, 0)).toBe(32);
+    expect(output.width).toBe(52);
+    expect(output.height).toBe(104);
+    expect(output.totalBeads).toBe(5408);
+    expect(output.usage.reduce((sum, item) => sum + item.count, 0)).toBe(5408);
 
     const originalMeta = await sharp(output.originalPath).metadata();
     expect(originalMeta.width).toBe(4);
     expect(originalMeta.height).toBe(8);
 
     const resultMeta = await sharp(output.resultPath).metadata();
-    expect(resultMeta.width).toBe(96);
-    expect(resultMeta.height).toBe(192);
+    expect(resultMeta.width).toBe(1248);
+    expect(resultMeta.height).toBe(2496);
 
     const previewMeta = await sharp(output.previewPath).metadata();
-    expect(previewMeta.width).toBeGreaterThan(96);
-    expect(previewMeta.height).toBeGreaterThan(192);
+    expect(previewMeta.width).toBeGreaterThan(1248);
+    expect(previewMeta.height).toBeGreaterThan(2496);
   });
 });
+
+
 

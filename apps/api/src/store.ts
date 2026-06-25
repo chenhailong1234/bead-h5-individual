@@ -48,6 +48,8 @@ export type BeadTaskRecord = {
   userId: string;
   status: "running" | "succeeded" | "failed" | "violation";
   gridSize: number;
+  gridWidth: number;
+  gridHeight: number;
   colorLimit: number | "auto";
   selectedColorCount?: number;
   brand: string;
@@ -97,14 +99,19 @@ export const defaultConfig = {
     ]
   },
   gridSize: {
-    name: "尺寸",
-    value: 64,
-    tips: "长边豆子数量",
+    name: "豆板规格",
+    value: "78x78",
+    tips: "选择最终图纸宽高",
     list: [
-      { label: "32", value: 32 },
-      { label: "48", value: 48 },
-      { label: "64", value: 64 },
-      { label: "96", value: 96 }
+      { label: "52 x 52", value: "52x52" },
+      { label: "52 x 104", value: "52x104" },
+      { label: "104 x 52", value: "104x52" },
+      { label: "78 x 78", value: "78x78" },
+      { label: "78 x 156", value: "78x156" },
+      { label: "156 x 78", value: "156x78" },
+      { label: "104 x 104", value: "104x104" },
+      { label: "104 x 208", value: "104x208" },
+      { label: "208 x 104", value: "208x104" }
     ]
   },
   colorLimit: {
@@ -180,6 +187,9 @@ export class MemoryStore {
 }
 
 export const store = new MemoryStore();
+
+
+
 
 
 

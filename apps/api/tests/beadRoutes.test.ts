@@ -28,7 +28,8 @@ describe("bead routes", () => {
 
     const upload = await agent
       .post("/api/app/bead/upload")
-      .field("gridSize", "8")
+      .field("boardSize", "52x52")
+      .field("gridSize", "104")
       .field("colorLimit", "8")
       .field("brand", "MARD")
       .field("isAI", "false")
@@ -59,7 +60,8 @@ describe("bead routes", () => {
 
     const upload = await agent
       .post("/api/app/bead/upload")
-      .field("gridSize", "8")
+      .field("boardSize", "52x52")
+      .field("gridSize", "104")
       .field("colorLimit", "8")
       .field("brand", "MARD")
       .field("isAI", "false")
@@ -79,7 +81,8 @@ describe("bead routes", () => {
 
     const upload = await agent
       .post("/api/app/bead/upload")
-      .field("gridSize", "8")
+      .field("boardSize", "52x52")
+      .field("gridSize", "104")
       .field("colorLimit", "8")
       .field("brand", "MARD")
       .field("isAI", "false")
@@ -104,7 +107,8 @@ describe("bead routes", () => {
 
     const upload = await agent
       .post("/api/app/bead/upload")
-      .field("gridSize", "8")
+      .field("boardSize", "52x52")
+      .field("gridSize", "104")
       .field("colorLimit", "auto")
       .field("brand", "MARD")
       .field("isAI", "true")
@@ -129,7 +133,8 @@ describe("bead routes", () => {
 
     const upload = await agent
       .post("/api/app/bead/upload")
-      .field("gridSize", "8")
+      .field("boardSize", "52x52")
+      .field("gridSize", "104")
       .field("colorLimit", "8")
       .field("brand", "MARD")
       .field("isAI", "false")
@@ -142,5 +147,7 @@ describe("bead routes", () => {
     expect(upload.body.code).toBe("FILE_TOO_LARGE");
   });
 });
+
+
 
 

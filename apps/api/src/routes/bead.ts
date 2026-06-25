@@ -22,6 +22,14 @@ function parseColorLimit(value: unknown): number | "auto" {
   return Number.isFinite(parsed) ? parsed : 16;
 }
 
+const boardSizeOptions = new Set(["52x52", "52x104", "104x52", "78x78", "78x156", "156x78", "104x104", "104x208", "208x104"]);
+
+function parseBoardSize(value: unknown) {
+  const raw = String(value ?? "78x78");
+  const boardSize = boardSizeOptions.has(raw) ? raw : "78x78";
+  const [width, height] = boardSize.split("x").map(Number);
+  return { boardSize, width, height };
+}
 function parseAiStyle(value: unknown): "remove-background" | "cartoonize" | "remove-background-cartoonize" {
   if (value === "remove-background" || value === "cartoonize" || value === "remove-background-cartoonize") {
     return value;
@@ -48,12 +56,15 @@ beadRouter.post("/upload", requireUser, upload.single("file"), async (req, res) 
     return;
   }
 
+  const board = parseBoardSize(req.body.boardSize);
   const taskId = randomUUID();
   const task: BeadTaskRecord = {
     id: taskId,
     userId: user.id,
     status: "running",
-    gridSize: Number(req.body.gridSize ?? 64),
+    gridSize: Math.max(board.width, board.height),
+    gridWidth: board.width,
+    gridHeight: board.height,
     colorLimit: parseColorLimit(req.body.colorLimit),
     brand: String(req.body.brand ?? "MARD"),
     isReversal: parseBool(req.body.isReversal),
@@ -80,6 +91,8 @@ beadRouter.post("/upload", requireUser, upload.single("file"), async (req, res) 
     const generated = await generateBeadImages(generationInputPath, {
       outputDir: outDir,
       gridSize: task.gridSize,
+      gridWidth: task.gridWidth,
+      gridHeight: task.gridHeight,
       colorLimit: task.colorLimit,
       isReversal: task.isReversal,
       tolerance: task.tolerance,
@@ -153,6 +166,8 @@ beadRouter.get("/queryBeadLogList", requireUser, (req, res) => {
       generateTime: task.createdAt.toLocaleString("zh-CN"),
       results: task.previewPath ? publicUrl(task.previewPath) : task.resultPath ? publicUrl(task.resultPath) : "",
       gridSize: task.gridSize,
+      gridWidth: task.gridWidth,
+      gridHeight: task.gridHeight,
       colorLimit: task.colorLimit,
       brand: task.brand,
       isReversal: task.isReversal,
@@ -167,5 +182,6 @@ beadRouter.get("/queryBeadLogList", requireUser, (req, res) => {
     }));
   res.json(tasks);
 });
+
 
 
