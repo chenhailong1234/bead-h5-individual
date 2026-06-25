@@ -192,6 +192,10 @@ async function generate() {
   }
 }
 
+function openHighRes() {
+  if (!currentImage.value) return;
+  window.location.href = currentImage.value;
+}
 async function pay(pkg: VipPackage) {
   const created = await createPayment(pkg.id);
   await mockNotify(created.outTradeNo);
@@ -308,6 +312,7 @@ onMounted(init);
         <button :class="{ active: activeTab === 'original' }" @click="activeTab = 'original'">原图</button>
         <button :class="{ active: activeTab === 'result' }" @click="activeTab = 'result'">效果</button>
         <button :class="{ active: activeTab === 'preview' }" @click="activeTab = 'preview'">图纸</button>
+        <button @click="openHighRes">高清图</button>
       </div>
       <p v-if="taskSummary" class="counts">{{ taskSummary }}</p>
       <img :src="currentImage" alt="生成的拼豆图纸" />
@@ -348,6 +353,8 @@ onMounted(init);
     <div v-if="toast" class="toast">{{ toast }}</div>
   </main>
 </template>
+
+
 
 
 
