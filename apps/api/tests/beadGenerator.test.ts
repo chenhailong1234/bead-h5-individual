@@ -3,7 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import sharp from "sharp";
 import { describe, expect, it } from "vitest";
-import { calculateGridDimensions, generateBeadImages, limitPalette, nearestPaletteColor, selectPaletteForImageColors, summarizeUsage } from "../src/services/beadGenerator";
+import { calculateGridDimensions, generateBeadImages, imageCellSizeForBoard, limitPalette, nearestPaletteColor, selectPaletteForImageColors, summarizeUsage } from "../src/services/beadGenerator";
 
 describe("bead generator helpers", () => {
   const palette = [
@@ -41,6 +41,12 @@ describe("bead generator helpers", () => {
   it("uses exact board dimensions when they are provided", () => {
     expect(calculateGridDimensions(37, 64, 64, 52, 104)).toEqual({ width: 52, height: 104 });
     expect(calculateGridDimensions(1200, 800, 64, 156, 78)).toEqual({ width: 156, height: 78 });
+  });
+
+  it("increases output cell size for larger boards", () => {
+    expect(imageCellSizeForBoard(52, 52)).toBe(32);
+    expect(imageCellSizeForBoard(104, 104)).toBe(48);
+    expect(imageCellSizeForBoard(208, 104)).toBe(48);
   });
 
   it("summarizes color usage by bead code", () => {
@@ -90,14 +96,18 @@ describe("bead generator helpers", () => {
     expect(originalMeta.height).toBe(8);
 
     const resultMeta = await sharp(output.resultPath).metadata();
-    expect(resultMeta.width).toBe(1248);
-    expect(resultMeta.height).toBe(2496);
+    expect(resultMeta.width).toBe(2496);
+    expect(resultMeta.height).toBe(4992);
 
     const previewMeta = await sharp(output.previewPath).metadata();
-    expect(previewMeta.width).toBeGreaterThan(1248);
-    expect(previewMeta.height).toBeGreaterThan(2496);
-  });
+    expect(previewMeta.width).toBeGreaterThan(2496);
+    expect(previewMeta.height).toBeGreaterThan(4992);
+  }, 20_000);
 });
+
+
+
+
 
 
 

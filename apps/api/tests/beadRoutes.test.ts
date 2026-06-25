@@ -51,7 +51,7 @@ describe("bead routes", () => {
     expect(customer.body.regularCount).toBe(0);
     expect(history.body).toHaveLength(1);
     expect(existsSync(task.body.absoluteResultPath)).toBe(true);
-  });
+  }, 20_000);
 
 
   it("forces tolerance to zero even if the client sends another value", async () => {
@@ -73,7 +73,7 @@ describe("bead routes", () => {
     expect(upload.status).toBe(200);
     const task = await agent.get(`/api/app/bead/getBeadTask?logId=${upload.body.msg}`);
     expect(task.body.tolerance).toBe(0);
-  });
+  }, 20_000);
   it("rejects generation when normal count is empty", async () => {
     const agent = request.agent(createApp());
     const login = await agent.post("/api/auth/dev-login");
@@ -147,6 +147,8 @@ describe("bead routes", () => {
     expect(upload.body.code).toBe("FILE_TOO_LARGE");
   });
 });
+
+
 
 
 

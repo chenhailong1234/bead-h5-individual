@@ -212,6 +212,12 @@ async function averageImageColor(inputPath: string) {
     alpha: 1
   };
 }
+export function imageCellSizeForBoard(widthCells: number, heightCells: number) {
+  const longest = Math.max(widthCells, heightCells);
+  if (longest >= 104) return 48;
+  if (longest >= 78) return 40;
+  return 32;
+}
 function renderResultSvg(colors: PaletteColor[], widthCells: number, heightCells: number, cellSize: number) {
   const width = widthCells * cellSize;
   const height = heightCells * cellSize;
@@ -296,8 +302,9 @@ export async function generateBeadImages(inputPath: string, options: GenerateOpt
   const palette = selectPaletteForImageColors(samples, options.palette, options.colorLimit);
   const colors = samples.map((rgb) => nearestPaletteColor(rgbToHex(rgb), palette));
   const usage = summarizeUsage(colors);
-  await sharp(Buffer.from(renderResultSvg(colors, dimensions.width, dimensions.height, 24))).png().toFile(resultPath);
-  await sharp(Buffer.from(renderChartSvg(colors, dimensions.width, dimensions.height, 24, usage))).png().toFile(previewPath);
+  const cellSize = imageCellSizeForBoard(dimensions.width, dimensions.height);
+  await sharp(Buffer.from(renderResultSvg(colors, dimensions.width, dimensions.height, cellSize))).png().toFile(resultPath);
+  await sharp(Buffer.from(renderChartSvg(colors, dimensions.width, dimensions.height, cellSize, usage))).png().toFile(previewPath);
 
   return {
     originalPath,
@@ -310,6 +317,7 @@ export async function generateBeadImages(inputPath: string, options: GenerateOpt
     usage
   };
 }
+
 
 
 
