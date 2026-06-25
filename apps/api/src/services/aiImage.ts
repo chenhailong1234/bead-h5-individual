@@ -78,13 +78,40 @@ async function fetchWithTimeout(
   }
 }
 
+function delay(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 async function downloadImage(url: string, outputPath: string) {
-  const response = await fetchWithTimeout(url, undefined, 60_000, "download");
-  if (!response.ok) {
-    throw new AiImageError("AI_IMAGE_DOWNLOAD_FAILED", "AI 图片下载失败", { status: response.status, stage: "download" });
+  let lastError: unknown;
+  for (let attempt = 1; attempt <= 3; attempt += 1) {
+    try {
+      const response = await fetchWithTimeout(url, undefined, 60_000, "download");
+      if (!response.ok) {
+        throw new AiImageError("AI_IMAGE_DOWNLOAD_FAILED", "AI 图片下载失败", { status: response.status, stage: "download" });
+      }
+      const arrayBuffer = await response.arrayBuffer();
+      await writeFile(outputPath, Buffer.from(arrayBuffer));
+      return;
+    } catch (error) {
+      lastError = error;
+      console.warn("AI image download attempt failed", {
+        attempt,
+        maxAttempts: 3,
+        host: new URL(url).host,
+        errorCode: error instanceof AiImageError ? error.code : error instanceof Error ? error.name : "UNKNOWN",
+        errorMessage: error instanceof Error ? error.message : String(error)
+      });
+      if (attempt < 3) {
+        await delay(attempt * 1500);
+      }
+    }
   }
-  const arrayBuffer = await response.arrayBuffer();
-  await writeFile(outputPath, Buffer.from(arrayBuffer));
+
+  if (lastError instanceof AiImageError) {
+    throw lastError;
+  }
+  throw new AiImageError("AI_IMAGE_DOWNLOAD_FAILED", "AI 图片下载失败", { stage: "download" });
 }
 
 export const volcengineAiImageProvider: AiImageProvider = {
@@ -159,5 +186,6 @@ export const volcengineAiImageProvider: AiImageProvider = {
 export function getAiImageProvider(): AiImageProvider {
   return volcengineAiImageProvider;
 }
+
 
 
