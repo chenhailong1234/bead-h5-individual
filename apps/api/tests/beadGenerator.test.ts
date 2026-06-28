@@ -49,6 +49,26 @@ describe("bead generator helpers", () => {
     expect(imageCellSizeForBoard(208, 104)).toBe(48);
   });
 
+  it("keeps edge colors in the selected palette even when light background dominates", () => {
+    const weightedPalette = [
+      { name: "light", hex: "#f7f7f7" },
+      { name: "pink", hex: "#e85c91" },
+      { name: "outline", hex: "#2b1b22" }
+    ];
+    const samples = [
+      ...Array.from({ length: 80 }, () => ({ r: 248, g: 248, b: 248 })),
+      ...Array.from({ length: 8 }, () => ({ r: 232, g: 92, b: 145 })),
+      ...Array.from({ length: 3 }, () => ({ r: 43, g: 27, b: 34 }))
+    ];
+    const weights = [
+      ...Array.from({ length: 80 }, () => 1),
+      ...Array.from({ length: 8 }, () => 4),
+      ...Array.from({ length: 3 }, () => 18)
+    ];
+
+    expect(selectPaletteForImageColors(samples, weightedPalette, 2, weights).map((item) => item.name)).toEqual(["outline", "pink"]);
+  });
+
   it("summarizes color usage by bead code", () => {
     expect(summarizeUsage([
       { name: "H16", hex: "#111111" },
@@ -104,6 +124,7 @@ describe("bead generator helpers", () => {
     expect(previewMeta.height).toBeGreaterThan(4992);
   }, 20_000);
 });
+
 
 
 

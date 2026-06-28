@@ -123,6 +123,19 @@ export function limitPalette(palette: PaletteColor[], colorLimit: number): Palet
   return palette.slice(0, Math.max(1, Math.min(colorLimit, palette.length)));
 }
 
+function colorLuminance(rgb: Rgb) {
+  return 0.299 * rgb.r + 0.587 * rgb.g + 0.114 * rgb.b;
+}
+
+function colorChroma(rgb: Rgb) {
+  return Math.max(rgb.r, rgb.g, rgb.b) - Math.min(rgb.r, rgb.g, rgb.b);
+}
+
+function isLightNeutral(hex: string) {
+  const rgb = hexToRgb(hex);
+  return colorLuminance(rgb) > 230 && colorChroma(rgb) < 22;
+}
+
 function normalizeColorLimit(colorLimit: number | "auto", availableColors: number, candidateCount: number) {
   if (colorLimit === "auto") {
     const autoCount = candidateCount > 60 ? 64 : candidateCount > 36 ? 42 : 24;
@@ -135,27 +148,34 @@ function normalizeColorLimit(colorLimit: number | "auto", availableColors: numbe
 export function selectPaletteForImageColors(
   samples: Rgb[],
   palette: PaletteColor[],
-  colorLimit: number | "auto"
+  colorLimit: number | "auto",
+  sampleWeights: number[] = []
 ): PaletteColor[] {
   if (palette.length === 0) {
     return [];
   }
 
   const usage = new Map<string, { color: PaletteColor; count: number }>();
-  for (const sample of samples) {
+  samples.forEach((sample, index) => {
     const nearest = nearestPaletteColor(rgbToHex(sample), palette);
     const key = nearest.name;
+    const weight = Math.max(0.1, sampleWeights[index] ?? 1);
     const existing = usage.get(key);
     if (existing) {
-      existing.count += 1;
+      existing.count += weight;
     } else {
-      usage.set(key, { color: nearest, count: 1 });
+      usage.set(key, { color: nearest, count: weight });
     }
-  }
+  });
 
   const sorted = [...usage.values()].sort((a, b) => b.count - a.count || a.color.name.localeCompare(b.color.name));
   const resolvedLimit = normalizeColorLimit(colorLimit, palette.length, sorted.length);
-  return sorted.slice(0, resolvedLimit).map((item) => item.color);
+  const strongColors = sorted.filter((item) => !isLightNeutral(item.color.hex));
+  const lightColors = sorted.filter((item) => isLightNeutral(item.color.hex));
+  const lightAllowance = strongColors.length === 0 ? resolvedLimit : Math.max(0, resolvedLimit - Math.max(2, Math.ceil(resolvedLimit * 0.75)));
+  return [...strongColors.slice(0, resolvedLimit), ...lightColors.slice(0, lightAllowance)]
+    .slice(0, resolvedLimit)
+    .map((item) => item.color);
 }
 
 export function summarizeUsage(colors: PaletteColor[]): ColorUsage[] {
@@ -202,6 +222,35 @@ function applyTolerance(rgb: Rgb, tolerance: number): Rgb {
   return { r: push(rgb.r), g: push(rgb.g), b: push(rgb.b) };
 }
 
+function enhancedInput(inputPath: string) {
+  return sharp(inputPath)
+    .rotate()
+    .modulate({ saturation: 1.2, brightness: 1.02 })
+    .linear(1.16, -16)
+    .sharpen({ sigma: 0.75, m1: 1.1, m2: 2.0 });
+}
+
+function sampleWeight(raw: Buffer, index: number, width: number) {
+  const pixel = index / 4;
+  const x = pixel % width;
+  const rgb = { r: raw[index], g: raw[index + 1], b: raw[index + 2] };
+  let weight = 1;
+  const luminance = colorLuminance(rgb);
+  if (luminance < 95) weight += 3.5;
+  if (colorChroma(rgb) > 45) weight += 1.2;
+
+  const addEdgeWeight = (neighborIndex: number) => {
+    if (neighborIndex < 0 || neighborIndex >= raw.length) return;
+    const other = { r: raw[neighborIndex], g: raw[neighborIndex + 1], b: raw[neighborIndex + 2] };
+    const distance = rgbDistance(rgb, other);
+    if (distance > 3600) weight += 4;
+    else if (distance > 1200) weight += 2;
+  };
+
+  if (x > 0) addEdgeWeight(index - 4);
+  if (index >= width * 4) addEdgeWeight(index - width * 4);
+  return weight;
+}
 async function averageImageColor(inputPath: string) {
   const stats = await sharp(inputPath).rotate().resize(32, 32, { fit: "inside" }).stats();
   const [r, g, b] = stats.channels;
@@ -317,6 +366,9 @@ export async function generateBeadImages(inputPath: string, options: GenerateOpt
     usage
   };
 }
+
+
+
 
 
 
